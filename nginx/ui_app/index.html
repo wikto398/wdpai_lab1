@@ -5,28 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GET and POST Requests</title>
     <script src="./requests_async.js"></script>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <h1>Send GET and POST Requests</h1>
+   <div class="container">
+  <h2 class="title">Let’s level up your brand, together</h2>
 
-    <!-- Form for GET Request -->
-    <h2>GET Request</h2>
-    <label for="getInputField">Enter path for GET request:</label>
-    <input type="text" id="getInputField" placeholder="Enter path for GET request">
-    <button onclick="sendGetRequest()">Send GET Request</button>
+  <form class="form">
+    <div class="input-group">
+      <label for="first-name">First name</label>
+      <input type="text" id="first-name" class="input" placeholder="First name">
+    </div>
 
-    <h3>GET Response:</h3>
-    <pre id="getResponse"></pre>
+    <div class="input-group">
+      <label for="last-name">Last name</label>
+      <input type="text" id="last-name" class="input" placeholder="Last name">
+    </div>
 
-    <hr>
+    <div class="input-group">
+      <label for="role">Role</label>
+      <select id="role" name="role">
+        <option value="Student">Student</option>
+        <option value="Manager">Manager</option>
+        <option value="Developer">Developer</option>
+      </select>
+    </div>
 
-    <!-- Form for POST Request -->
-    <h2>POST Request</h2>
-    <label for="postNameField">Enter name for POST request:</label>
-    <input type="text" id="postNameField" placeholder="Enter name for POST request">
-    <button onclick="sendPostRequest()">Send POST Request</button>
+    <div class="checkbox-group">
+      <input type="checkbox" id="privacy-policy" required>
+      <label for="privacy-policy">You agree to our friendly <a href="#">privacy policy</a>.</label>
+    </div>
 
-    <h3>POST Response:</h3>
-    <pre id="postResponse"></pre>
+    <button type="submit" class="submit-btn">SUBMIT</button>
+  </form>
+   </div>
+
+    <div class="employee-list">
+        <div class="employee">
+            <div>
+                <p class="employee-name">Wiktor Skwara</p>
+                <p class="employee-role">student</p>
+            </div>
+            <div class="delete-btn">🗑️</div>
+        </div>
+    </div>
+</div>
+ 
 </body>
 </html>

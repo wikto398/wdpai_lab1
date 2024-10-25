@@ -11,6 +11,7 @@ function sendGetRequest() {
             document.getElementById("getResponse").textContent = JSON.stringify(data, null, 2);
         })
         .catch(error => console.error('Error:', error));
+    console.log(response);
 }
 
 // Function to send POST request

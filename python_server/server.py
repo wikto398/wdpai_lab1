@@ -1,11 +1,13 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Type
+import uuid
 
 
 # Define the request handler class by extending BaseHTTPRequestHandler.
 # This class will handle HTTP requests that the server receives.
 class SimpleRequestHandler(BaseHTTPRequestHandler):
+    user_list = [{"first_name": "Wiktor", "last_name": "Skwara", "role": "student", "id": uuid.uuid4().hex}]
 
     # Handle OPTIONS requests (used in CORS preflight checks).
     # CORS (Cross-Origin Resource Sharing) is a mechanism that allows restricted resources
@@ -45,8 +47,8 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
         # Prepare the response data, which will be returned in JSON format.
         # The response contains a simple message and the path of the request.
         response: dict = {
-            "message": "This is a GET request",
-            "path": self.path
+            "message": "Users sent from the server",
+            "users": self.user_list
         }
 
         # Convert the response dictionary to a JSON string and send it back to the client.
@@ -67,16 +69,25 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
         # We expect the POST request body to contain JSON-formatted data.
         received_data: dict = json.loads(post_data.decode())
 
-        # Prepare the response data.
-        # It includes a message indicating it's a POST request and the data we received from the client.
-        response: dict = {
-            "message": "This is a POST request",
-            "received": received_data
-        }
+        response: dict = {}
+
+        if received_data.get("first_name") and received_data.get("last_name") and received_data.get("role"):
+            received_data["id"] = uuid.uuid4().hex
+            self.user_list.append(received_data)
+            response: dict = {
+                "message": "User added",
+                "users": self.user_list
+            }
+            self.send_response(200)
+        else:
+            response: dict = {
+                "message": "Failed to add user. Required fields: first_name, last_name, role",
+                "received_data": received_data
+            }
+            self.send_response(400)
 
         # Send the response headers.
         # Set the status to 200 OK and indicate the response content will be in JSON format.
-        self.send_response(200)
         self.send_header('Content-type', 'application/json')
 
         # Again, allow any origin to access this resource (CORS header).
@@ -86,6 +97,35 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
 
         # Convert the response dictionary to a JSON string and send it back to the client.
+        self.wfile.write(json.dumps(response).encode())
+
+    def do_DELETE(self):
+        content_length: int = int(self.headers['Content-Length'])
+        post_data: bytes = self.rfile.read(content_length)
+        received_data: dict = json.loads(post_data.decode())
+        response: dict = {}
+
+        if received_data.get("first_name") and received_data.get("last_name") and received_data.get("role"):
+            for user in self.user_list:
+                if user.get("id") == received_data.get("id"):
+                    self.user_list.remove(user)
+                    break
+            response: dict = {
+                "message": "User removed",
+                "users": self.user_list
+            }
+            self.send_response(200)
+        else:
+            response: dict = {
+                "message": "Failed to remove user. Required fields: first_name, last_name, role",
+                "received_data": received_data
+            }
+            self.send_response(400)
+
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
         self.wfile.write(json.dumps(response).encode())
 
 
