@@ -1,13 +1,73 @@
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Type
-import uuid
+import psycopg2
+import os
+import time
 
+DB_HOST = os.environ.get('DB_HOST', 'postgres')
+DB_PORT = int(os.environ.get('DB_PORT', 5432))
+DB_NAME = os.environ.get('DB_NAME', 'mydatabase')
+DB_USER = os.environ.get('DB_USER', 'myuser')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'mypassword')
+
+def connect_to_db():
+    while True:
+        try:
+            conn = psycopg2.connect(
+                host=DB_HOST,
+                port=DB_PORT,
+                dbname=DB_NAME,
+                user=DB_USER,
+                password=DB_PASSWORD
+            )
+            print("Połączono z bazą danych")
+            return conn
+        except psycopg2.OperationalError:
+            print("Błąd połączenia z bazą danych, ponawianie za 5 sekund...")
+            time.sleep(5)
+        
+def select_all_users(conn):
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, first_name, last_name, role FROM users")
+        conn.commit()
+        data = []
+        for row in cursor:
+            data.append({
+                "id": row[0],
+                "first_name": row[1],
+                "last_name": row[2],
+                "role": row[3]
+            })
+        return data 
+    except psycopg2.Error as e:
+        print(f"Error: {e}")
+        conn.rollback()
+        return []
+
+def insert_user(conn, user):
+    try:
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO users (first_name, last_name, role) VALUES (%s, %s, %s)",
+                    (user["first_name"], user["last_name"], user["role"]))
+        conn.commit()
+    except psycopg2.Error as e:
+        print(f"Error: {e}")
+        conn.rollback()
+
+def delete_user(conn, user_id):
+    try:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM users WHERE id = %s", (user_id,))
+        conn.commit()
+    except psycopg2.Error as e:
+        print(f"Error: {e}")
+        conn.rollback()
 
 # Define the request handler class by extending BaseHTTPRequestHandler.
 # This class will handle HTTP requests that the server receives.
 class SimpleRequestHandler(BaseHTTPRequestHandler):
-    user_list = [{"first_name": "Wiktor", "last_name": "Skwara", "role": "student", "id": uuid.uuid4().hex}]
 
     # Handle OPTIONS requests (used in CORS preflight checks).
     # CORS (Cross-Origin Resource Sharing) is a mechanism that allows restricted resources
@@ -46,9 +106,11 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
 
         # Prepare the response data, which will be returned in JSON format.
         # The response contains a simple message and the path of the request.
+        conn = connect_to_db()
+        user_list = select_all_users(conn)
         response: dict = {
             "message": "Users sent from the server",
-            "users": self.user_list
+            "users": user_list
         }
 
         # Convert the response dictionary to a JSON string and send it back to the client.
@@ -72,11 +134,10 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
         response: dict = {}
 
         if received_data.get("first_name") and received_data.get("last_name") and received_data.get("role"):
-            received_data["id"] = uuid.uuid4().hex
-            self.user_list.append(received_data)
+            conn = connect_to_db()
+            insert_user(conn, received_data)
             response: dict = {
-                "message": "User added",
-                "users": self.user_list
+                "message": "User added"
             }
             self.send_response(200)
         else:
@@ -106,13 +167,10 @@ class SimpleRequestHandler(BaseHTTPRequestHandler):
         response: dict = {}
 
         if received_data.get("first_name") and received_data.get("last_name") and received_data.get("role"):
-            for user in self.user_list:
-                if user.get("id") == received_data.get("id"):
-                    self.user_list.remove(user)
-                    break
+            conn = connect_to_db()
+            delete_user(conn, received_data["id"])
             response: dict = {
-                "message": "User removed",
-                "users": self.user_list
+                "message": "User removed"
             }
             self.send_response(200)
         else:
